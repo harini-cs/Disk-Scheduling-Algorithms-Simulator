@@ -1,0 +1,51 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background-image: url('os.jpg'); /* Replace with your background image */
+    background-size: cover;
+    background-repeat: no-repeat;
+    margin: 0;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    border: 1px solid #ccc;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.8); /* Transparent white background */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Optional: adds a subtle shadow */
+}
+
+
+h1, h2 {
+    text-align: center;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+label, select, input, button {
+    font-size: 1rem;
+}
+
+button {
+    padding: 10px;
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#simulation-result {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+}
