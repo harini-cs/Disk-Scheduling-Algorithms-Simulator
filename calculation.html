@@ -10,7 +10,7 @@
 <body>
     <div class="container">
         <h1>Disk Scheduling Algorithms</h1>
-        <label for="algorithm">Choose an algorithm:</label>
+        <label for="algorithm">Choose an algorithm:</label><br>
         <select id="algorithm" onchange="showAlgorithm()">
             <option value="fcfs">FCFS</option>
             <option value="sstf">SSTF</option>
@@ -18,7 +18,7 @@
             <option value="cscan">C-SCAN</option>
             <option value="look">LOOK</option>
             <option value="clook">C-LOOK</option>
-        </select>
+        </select><br>
         <div id="algorithm-description"></div>
         
         <h2>Simulation</h2>
@@ -29,13 +29,15 @@
             <label for="head">Initial Head Position:</label>
             <input type="number" id="head" required>
             
-            <label for="disk-size">Disk Size:</label>
+            <label for="disk-size">Final Disk Number:</label>
             <input type="number" id="disk-size" required>
             
-            <button type="submit">Simulate</button>
+            <button type="submit">SIMULATE</button>
         </form>
         
         <div id="simulation-result"></div>
+        <a class="back" href="index.html">Back to Home</a>
     </div>
+    
 </body>
 </html>
