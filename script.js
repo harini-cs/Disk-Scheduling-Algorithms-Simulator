@@ -32,11 +32,16 @@ function simulate(event) {
     const algorithm = document.getElementById('algorithm').value;
     const requestsInput = document.getElementById('requests').value;
     const headInput = document.getElementById('head').value;
+    const previousHeadInput = document.getElementById('previous-head').value;
     const diskSizeInput = document.getElementById('disk-size').value;
+    
+
+
 
     // Convert requests to an array of numbers
     const requests = requestsInput.split(',').map(Number);
     const head = Number(headInput);
+    const previousHead = Number(previousHeadInput);
     const diskSize = Number(diskSizeInput);
 
     let result;
@@ -47,16 +52,16 @@ function simulate(event) {
             result = fcfs(requests, head, movements);
             break;
         case 'scan':
-            result = scan(requests, head, movements, diskSize);
+            result = scan(requests, head, movements, diskSize,previousHead);
             break;
         case 'cscan':
-            result = cscan(requests, head, movements, diskSize);
+            result = cscan(requests, head, movements, diskSize,previousHead);
             break;
         case 'look':
-            result = look(requests, head, movements, diskSize);
+            result = look(requests, head, movements, diskSize,previousHead);
             break;
         case 'clook':
-            result = clook(requests, head, movements, diskSize);
+            result = clook(requests, head, movements, diskSize,previousHead);
             break;
         case 'sstf':
         default:
@@ -118,7 +123,57 @@ function sstf(requests, head, movements, diskSize) {
     return totalMovement;
 }
 
-function scan(requests, head, movements, diskSize) {
+function scan(requests, head, movements, diskSize, previousHead) {
+    let totalMovement = 0;
+    let currentPosition = head;
+    movements.push(currentPosition);
+
+    const sortedRequests = requests.slice().sort((a, b) => a - b);
+
+    let direction = (head >= previousHead) ? 1 : -1;
+
+    if (direction === 1) {
+        let rightRequests = sortedRequests.filter(req => req >= head);
+        rightRequests.sort((a, b) => a - b);
+        for (let i = 0; i < rightRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - rightRequests[i]);
+            currentPosition = rightRequests[i];
+            movements.push(currentPosition);
+        }
+        totalMovement += Math.abs(currentPosition - diskSize);
+        currentPosition = diskSize;
+        movements.push(currentPosition);
+        let leftRequests = sortedRequests.filter(req => req < head);
+        leftRequests.sort((a, b) => b - a);
+        for (let i = 0; i < leftRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - leftRequests[i]);
+            currentPosition = leftRequests[i];
+            movements.push(currentPosition);
+        }
+    } else {
+        let leftRequests = sortedRequests.filter(req => req <= head);
+        leftRequests.sort((a, b) => b - a);
+        for (let i = 0; i < leftRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - leftRequests[i]);
+            currentPosition = leftRequests[i];
+            movements.push(currentPosition);
+        }
+        totalMovement += Math.abs(currentPosition - 0);
+        currentPosition = 0;
+        movements.push(currentPosition);
+        let rightRequests = sortedRequests.filter(req => req > head);
+        rightRequests.sort((a, b) => a - b);
+        for (let i = 0; i < rightRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - rightRequests[i]);
+            currentPosition = rightRequests[i];
+            movements.push(currentPosition);
+        }
+    }
+
+    return totalMovement;
+}
+
+function cscan(requests, head, movements, diskSize, previousHead) {
     let totalMovement = 0;
     let currentPosition = head;
     movements.push(currentPosition);
@@ -126,64 +181,63 @@ function scan(requests, head, movements, diskSize) {
     // Sort requests in ascending order
     const sortedRequests = requests.slice().sort((a, b) => a - b);
 
-    // Find the index where head position would fit in sorted array
-    let index = 0;
-    while (index < sortedRequests.length && sortedRequests[index] < head) {
-        index++;
-    }
+    // Determine the direction based on previous head position
+    let direction = (head >= previousHead) ? 1 : -1;
 
-    // Move right
-    for (let i = index; i < sortedRequests.length; i++) {
-        totalMovement += Math.abs(currentPosition - sortedRequests[i]);
-        currentPosition = sortedRequests[i];
+    if (direction === 1) {
+        // Move right
+        let rightRequests = sortedRequests.filter(req => req >= head);
+        rightRequests.sort((a, b) => a - b);
+        for (let i = 0; i < rightRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - rightRequests[i]);
+            currentPosition = rightRequests[i];
+            movements.push(currentPosition);
+        }
+        // Move to end and then to start
+        totalMovement += Math.abs(currentPosition - diskSize);
+        currentPosition = diskSize;
         movements.push(currentPosition);
-    }
-
-    // Move left
-    totalMovement += Math.abs(currentPosition - diskSize); // Move to the end of the disk
-    currentPosition = diskSize;
-    movements.push(currentPosition);
-
-    for (let i = index - 1; i >= 0; i--) {
-        totalMovement += Math.abs(currentPosition - sortedRequests[i]);
-        currentPosition = sortedRequests[i];
+        totalMovement += diskSize; // Move to start of the disk
+        currentPosition = 0;
         movements.push(currentPosition);
+        // Move right again to satisfy remaining requests
+        for (let i = 0; i < sortedRequests.length; i++) {
+            if (sortedRequests[i] < head) {
+                totalMovement += Math.abs(currentPosition - sortedRequests[i]);
+                currentPosition = sortedRequests[i];
+                movements.push(currentPosition);
+            }
+        }
+    } else {
+        // Move left
+        let leftRequests = sortedRequests.filter(req => req <= head);
+        leftRequests.sort((a, b) => b - a);
+        for (let i = 0; i < leftRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - leftRequests[i]);
+            currentPosition = leftRequests[i];
+            movements.push(currentPosition);
+        }
+        // Move to start and then to end
+        totalMovement += Math.abs(currentPosition - 0);
+        currentPosition = 0;
+        movements.push(currentPosition);
+        totalMovement += diskSize; // Move to end of the disk
+        currentPosition = diskSize;
+        movements.push(currentPosition);
+        // Move left again to satisfy remaining requests
+        for (let i = sortedRequests.length - 1; i >= 0; i--) {
+            if (sortedRequests[i] > head) {
+                totalMovement += Math.abs(currentPosition - sortedRequests[i]);
+                currentPosition = sortedRequests[i];
+                movements.push(currentPosition);
+            }
+        }
     }
 
     return totalMovement;
 }
 
-function cscan(requests, head, movements, diskSize) {
-    const sortedRequests = [...requests].sort((a, b) => a - b);
-    let totalMovement = 0;
-    let currentPosition = head;
-    movements.push(currentPosition);
-
-    for (let i = 0; i < sortedRequests.length; i++) {
-        if (sortedRequests[i] >= head) {
-            totalMovement += Math.abs(currentPosition - sortedRequests[i]);
-            currentPosition = sortedRequests[i];
-            movements.push(currentPosition);
-        }
-    }
-    totalMovement += Math.abs(currentPosition - diskSize); // Move to the end of the disk
-    currentPosition = diskSize;
-    movements.push(currentPosition);
-    totalMovement += diskSize; // Move to the start of the disk
-    currentPosition = 0;
-    movements.push(currentPosition);
-    for (let i = 0; i < sortedRequests.length; i++) {
-        if (sortedRequests[i] < head) {
-            totalMovement += Math.abs(currentPosition - sortedRequests[i]);
-            currentPosition = sortedRequests[i];
-            movements.push(currentPosition);
-        }
-    }
-
-    return totalMovement;
-}
-
-function look(requests, head, movements, diskSize) {
+function look(requests, head, movements, diskSize, previousHead) {
     let totalMovement = 0;
     let currentPosition = head;
     movements.push(currentPosition);
@@ -191,124 +245,93 @@ function look(requests, head, movements, diskSize) {
     // Sort requests in ascending order
     const sortedRequests = requests.slice().sort((a, b) => a - b);
 
-    // Find the index where head position would fit in sorted array
-    let index = 0;
-    while (index < sortedRequests.length && sortedRequests[index] < head) {
-        index++;
-    }
+    // Determine the direction based on previous head position
+    let direction = (head >= previousHead) ? 1 : -1;
 
-    // Move right
-    for (let i = index; i < sortedRequests.length; i++) {
-        totalMovement += Math.abs(currentPosition - sortedRequests[i]);
-        currentPosition = sortedRequests[i];
-        movements.push(currentPosition);
-    }
-
-    // Move left
-    for (let i = index - 1; i >= 0; i--) {
-        totalMovement += Math.abs(currentPosition - sortedRequests[i]);
-        currentPosition = sortedRequests[i];
-        movements.push(currentPosition);
+    if (direction === 1) {
+        // Move right
+        let rightRequests = sortedRequests.filter(req => req >= head);
+        rightRequests.sort((a, b) => a - b);
+        for (let i = 0; i < rightRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - rightRequests[i]);
+            currentPosition = rightRequests[i];
+            movements.push(currentPosition);
+        }
+        // Move left to satisfy remaining requests
+        let leftRequests = sortedRequests.filter(req => req < head);
+        leftRequests.sort((a, b) => b - a);
+        for (let i = 0; i < leftRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - leftRequests[i]);
+            currentPosition = leftRequests[i];
+            movements.push(currentPosition);
+        }
+    } else {
+        // Move left
+        let leftRequests = sortedRequests.filter(req => req <= head);
+        leftRequests.sort((a, b) => b - a);
+        for (let i = 0; i < leftRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - leftRequests[i]);
+            currentPosition = leftRequests[i];
+            movements.push(currentPosition);
+        }
+        // Move right to satisfy remaining requests
+        let rightRequests = sortedRequests.filter(req => req > head);
+        rightRequests.sort((a, b) => a - b);
+        for (let i = 0; i < rightRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - rightRequests[i]);
+            currentPosition = rightRequests[i];
+            movements.push(currentPosition);
+        }
     }
 
     return totalMovement;
 }
 
-function clook(requests, head, movements, diskSize) {
-    const sortedRequests = [...requests].sort((a, b) => a - b);
+function clook(requests, head, movements, diskSize, previousHead) {
     let totalMovement = 0;
     let currentPosition = head;
     movements.push(currentPosition);
 
-    for (let i = 0; i < sortedRequests.length; i++) {
-        if (sortedRequests[i] >= head) {
-            totalMovement += Math.abs(currentPosition - sortedRequests[i]);
-            currentPosition = sortedRequests[i];
+    // Sort requests in ascending order
+    const sortedRequests = requests.slice().sort((a, b) => a - b);
+
+    // Determine the direction based on previous head position
+    let direction = (head >= previousHead) ? 1 : -1;
+
+    if (direction === 1) {
+        // Move right
+        let rightRequests = sortedRequests.filter(req => req >= head);
+        rightRequests.sort((a, b) => a - b);
+        for (let i = 0; i < rightRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - rightRequests[i]);
+            currentPosition = rightRequests[i];
             movements.push(currentPosition);
         }
-    }
-    for (let i = 0; i < sortedRequests.length; i++) {
-        if (sortedRequests[i] < head) {
-            totalMovement += Math.abs(currentPosition - sortedRequests[i]);
-            currentPosition = sortedRequests[i];
+        // Move to the beginning of the requests list and continue moving right
+        for (let i = 0; i < sortedRequests.length; i++) {
+            if (sortedRequests[i] < head) {
+                totalMovement += Math.abs(currentPosition - sortedRequests[i]);
+                currentPosition = sortedRequests[i];
+                movements.push(currentPosition);
+            }
+        }
+    } else {
+        // Move left
+        let leftRequests = sortedRequests.filter(req => req <= head);
+        leftRequests.sort((a, b) => b - a);
+        for (let i = 0; i < leftRequests.length; i++) {
+            totalMovement += Math.abs(currentPosition - leftRequests[i]);
+            currentPosition = leftRequests[i];
             movements.push(currentPosition);
         }
+        // Move to the end of the requests list and continue moving left
+        for (let i = sortedRequests.length - 1; i >= 0; i--) {
+            if (sortedRequests[i] >head) {
+                totalMovement += Math.abs(currentPosition - sortedRequests[i]);
+                currentPosition = sortedRequests[i];
+                movements.push(currentPosition);
+                }
+            }
+        }
+        return totalMovement;
     }
-
-    return totalMovement;
-}
-
-// Function to display the algorithm description based on selection
-function showAlgorithm() {
-    const algorithm = document.getElementById('algorithm').value;
-    let description = '';
-
-    switch (algorithm) {
-        case 'fcfs':
-            description = 'First-Come, First-Served (FCFS) scheduling algorithm.';
-            break;
-        case 'sstf':
-            description = 'Shortest Seek Time First (SSTF) scheduling algorithm.';
-            break;
-        case 'scan':
-            description = 'SCAN scheduling algorithm.';
-            break;
-        case 'cscan':
-            description = 'Circular SCAN (C-SCAN) scheduling algorithm.';
-            break;
-        case 'look':
-            description = 'LOOK scheduling algorithm.';
-            break;
-        case 'clook':
-            description = 'Circular LOOK (C-LOOK) scheduling algorithm.';
-            break;
-    }
-
-    document.getElementById('algorithm-description').innerText = description;
-}
-
-// Function to simulate disk scheduling based on selected algorithm
-function simulate(event) {
-    event.preventDefault();
-
-    const algorithm = document.getElementById('algorithm').value;
-    const requestsInput = document.getElementById('requests').value;
-    const headInput = document.getElementById('head').value;
-    const diskSizeInput = document.getElementById('disk-size').value;
-
-    // Convert requests to an array of numbers
-    const requests = requestsInput.split(',').map(Number);
-    const head = Number(headInput);
-    const diskSize = Number(diskSizeInput);
-
-    let result;
-    let movements = [];
-
-    switch (algorithm) {
-        case 'fcfs':
-            result = fcfs(requests, head, movements);
-            break;
-        case 'scan':
-            result = scan(requests, head, movements, diskSize);
-            break;
-        case 'cscan':
-            result = cscan(requests, head, movements, diskSize);
-            break;
-        case 'look':
-            result = look(requests, head, movements, diskSize);
-            break;
-        case 'clook':
-            result = clook(requests, head, movements, diskSize);
-            break;
-        case 'sstf':
-        default:
-            result = sstf(requests, head, movements, diskSize);
-            break;
-    }
-
-    // Display simulation results
-    const simulationResult = document.getElementById('simulation-result');
-    simulationResult.innerHTML = `<h2>Simulation Results</h2>`;
-    simulationResult.innerHTML += `Total head movement: ${result} cylinders<br><br>`;
-    simulationResult.innerHTML += `Movements: ${movements.join(' -> ')}`;
-}
